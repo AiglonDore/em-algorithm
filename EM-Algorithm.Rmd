@@ -9,7 +9,7 @@ We first generate:
 \begin{enumerate}
 \item A sample of \(n=100\) observations with a Poisson law using \(\lambda=3\).
 \item A sample of \(n=200\) observations with a Poisson law using \(\lambda=15\).
-\item A vectgor of \(300\) coordinates, which the 100 first are 1 and the others are 2.
+\item A vector of \(300\) coordinates, which the 100 first are 1 and the others are 2.
 \end{enumerate}
 ```{r generatingPoisson}
 sample3 <- rpois(100, 3)
@@ -31,8 +31,22 @@ Now, we are going to generate a Poisson law using two components:
 ```{r poisson2Comp}
 #Settings constants
 pi1 <- 0.4
-pi2 <- 0.4
+pi2 <- 0.6
 lambda1 <- 3
 lambda2 <- 15
-#Computing sample
+sample1 <- rpois(300, lambda1)
+sample2 <- rpois(300,lambda2)
+
+mixed_sample = pi1 * sample1 + pi2 * sample2
+print(mixed_sample)
+```
+
+\part{EM-algorithm}
+For a \(K\)-components Poisson law, the density function is:
+\[P(x)=\sum_{i=1}^{k}\pi_i\frac{\mathrm{e}^{-\lambda_i}}{x!}\lambda_i^x\]
+We first want the initialization of the EM-algorithm:
+```{r em-init}
+em_init = function(K){
+  
+}
 ```
