@@ -40,13 +40,5 @@ sample2 <- rpois(300,lambda2)
 mixed_sample = pi1 * sample1 + pi2 * sample2
 print(mixed_sample)
 ```
-
 \part{EM-algorithm}
-For a \(K\)-components Poisson law, the density function is:
-\[P(x)=\sum_{i=1}^{k}\pi_i\frac{\mathrm{e}^{-\lambda_i}}{x!}\lambda_i^x\]
 We first want the initialization of the EM-algorithm:
-```{r em-init}
-em_init = function(K){
-  
-}
-```
