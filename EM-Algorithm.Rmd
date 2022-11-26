@@ -40,5 +40,23 @@ sample2 <- rpois(300,lambda2)
 mixed_sample = pi1 * sample1 + pi2 * sample2
 print(mixed_sample)
 ```
+\clearpage
 \part{EM-algorithm}
+\section{Initialization}
 We first want the initialization of the EM-algorithm:
+```{r em_init}
+pi1 <- 0.4
+pi2 <- 0.6
+lambda1 <- 3
+lambda2 <- 15
+
+dpois2comp <- function(x){
+  return(pi1 * exp(-lambda1) /
+           factorial(x) * lambda1 ** x +
+           pi2 * exp(-lambda2) / 
+           factorial(x) * lambda2 ** x)
+}
+```
+We will also use the \verb|dpois2comp| function to have the density
+of the Poisson law with two components.
+\section{Estimation}
