@@ -60,3 +60,44 @@ dpois2comp <- function(x){
 We will also use the \verb|dpois2comp| function to have the density
 of the Poisson law with two components.
 \section{Estimation}
+We now want to compute all the expectancies, before finding the element that will maximize it:
+```{r eme}
+em_e = function(data, theta){
+  result <- c()
+  
+  return(result)
+}
+```
+\section{Maximisation}
+Having all the possible values for the expectancy, we now want the element that maximizes the expectancy:
+```{r emm}
+em_m = function(expectancy){
+  i <- 1
+  for (j in 2:length(expectancy)){
+    if (expectancy[i] < expectancy[j]) {
+      i <- j
+    }
+  }
+  return(i)
+}
+```
+\section{Global algorithm and application}
+Using all the previous functions, we are going to write the EM-algorithm:
+```{r em}
+em <- function(data, k = NULL){
+  i <- 0
+  theta <- runif(n = 1, min = 0, max = 50)
+  theta2 <- -1
+  while (theta != theta2 || (!(is.null(k)) && i < k)){
+    theta2 <- theta
+    i <- i + 1
+    expec <- em_e(data, theta)
+    theta <- em_m(expec)
+  }
+  return(theta)
+}
+```
+We can now use our algorithm on the previous data set:
+```{r ex}
+print(em(mixed_sample))
+```
