@@ -1,6 +1,6 @@
 ---
 title: 'Pratical work: EM algorithm'
-author: "Thomas Roiseux"
+author: "Houda Aiboud Benchekroun and Thomas Roiseux"
 date: "`r Sys.Date()`"
 output: pdf_document
 ---
@@ -62,7 +62,7 @@ of the Poisson law with two components.
 \section{Estimation}
 We now want to compute all the expectancies, before finding the element that will maximize it:
 ```{r eme}
-em_e = function(data, theta){
+em_e = function(data, theta, d){
   result <- c()
   
   return(result)
@@ -84,14 +84,14 @@ em_m = function(expectancy){
 \section{Global algorithm and application}
 Using all the previous functions, we are going to write the EM-algorithm:
 ```{r em}
-em <- function(data, k = NULL){
+em <- function(data, d, k = NULL){
   i <- 0
   theta <- runif(n = 1, min = 0, max = 50)
   theta2 <- -1
   while (theta != theta2 || (!(is.null(k)) && i < k)){
     theta2 <- theta
     i <- i + 1
-    expec <- em_e(data, theta)
+    expec <- em_e(data, theta, d)
     theta <- em_m(expec)
   }
   return(theta)
