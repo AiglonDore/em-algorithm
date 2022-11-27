@@ -99,5 +99,9 @@ em <- function(data, k = NULL){
 ```
 We can now use our algorithm on the previous data set:
 ```{r ex}
-print(em(mixed_sample))
+mvrais <- em(mixed_sample)
+print(paste("Likelyhood maximum: "), mvrais)
+plot(mixed_sample, color = 'red')
+model <- rpois(n = 300, lambda = mvrais)
+points(model, color = ' blue')
 ```
