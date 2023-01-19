@@ -3,6 +3,7 @@ title: 'Pratical work: EM algorithm'
 author: "Houda Aiboud Benchekroun and Thomas Roiseux"
 date: "`r Sys.Date()`"
 output: pdf_document
+header-includes: \DeclareMathOperator{\E}{\mathbb{E}}
 ---
 \part{Simulation}
 We first generate:
@@ -25,8 +26,8 @@ for (i in 1:200)
 {
   v <- c(v, 2, recursive = TRUE)
 }
-```
 
+```
 Now, we are going to generate a Poisson law using two components:
 ```{r poisson2Comp}
 #Settings constants
@@ -37,71 +38,172 @@ lambda2 <- 15
 sample1 <- rpois(300, lambda1)
 sample2 <- rpois(300,lambda2)
 
-mixed_sample = pi1 * sample1 + pi2 * sample2
+
+#on complète avec les z cachées 
+
+Z<-rbinom(300,1,0.4)#les zi suivent une loi de bernouilli de parametre 0.4 
+                    #cad la probabilité que xi soit dans ce groupe
+mixed_sample=c()
+for (i in 1:300){
+  if (Z[i]==1){
+    mixed_sample=c(mixed_sample,sample1[i])
+  }
+  else{
+    mixed_sample=c(mixed_sample,sample2[i])
+  }
+}
 print(mixed_sample)
 ```
+
 \clearpage
 \part{EM-algorithm}
+The EM-algorithm is a recursive algorithm used to maximize the log-likelihood on incomplete data.
+Therefore, it requires to impute the missing elements, with a probability
+\(f(z_i\mid x_i,\theta)\), \(z_i\) the missing element.
+\par
+We now define the completed log-likelihood:
+\[L((x,z),\theta)=\sum_{i=1}^{n}\ln(f(z_i\mid x_i,\theta))-\ln(f(x_i,\theta))\]
+We now denote \(\theta^{(c)}\) the indicator of the parameters and, as \(L(x,z),\theta)\) is independent with \(z\),
+we finally have \(\E[L(x,\theta)\mid\theta^{(c)}]=L((x,z),\theta)\).
+Therefore:
+\[L((x,z),\theta)=\underbrace{\E[L((x,z),\theta)\mid \theta^{(c)}]}_{Q(\theta,\theta^{(c)})}
+-\underbrace{\E\left[\sum_{i=1}^{n}\ln(f(z_i\mid x_i,\theta))\middle|\theta^{(c)}\right]}_{H(\theta,\theta^{(c)})}
+\]
+To maximize the log-likelihood, we recursively look for the best \(\theta^{(c)}\), that maximizes \(Q(\theta,\theta^{(c)})\).\par
+In this case, we replace \(f\) with the given density.
+\par
+The algorithm works as following:
+\begin{enumerate}
+\item Beginning in a random position \(\theta^{(0)}\).
+\item Computing expectancy with \(Q(\theta,\theta^{(c)})\).
+\item Calculating \(\theta^{(c+1)}\) to maximize the expectancy.
+\item Redoing the 2 previous steps until convergence.
+\end{enumerate}
 \section{Initialization}
-We first want the initialization of the EM-algorithm:
-```{r em_init}
-pi1 <- 0.4
-pi2 <- 0.6
-lambda1 <- 3
-lambda2 <- 15
 
-dpois2comp <- function(x){
-  return(pi1 * exp(-lambda1) /
-           factorial(x) * lambda1 ** x +
-           pi2 * exp(-lambda2) / 
-           factorial(x) * lambda2 ** x)
+```{r}
+
+initialiser<-function(k){
+  teta<-c()
+  for (i in 1:k){
+    teta[i]=1/k
+  }
+  for (j in (k+1):(k+k)){
+    teta[j]=floor(runif(n=1,1,15))
+  }
+  return(teta)
 }
+
+
+
 ```
-We will also use the \verb|dpois2comp| function to have the density
-of the Poisson law with two components.
-\section{Estimation}
-We now want to compute all the expectancies, before finding the element that will maximize it:
-```{r eme}
-em_e = function(data, theta, d){
-  result <- c()
+
+\section{Step E}
+We denote \(\Phi=(\pi_1,\ldots,\pi_k,\\theta_1,\ldots,\theta_k)\) and then we have:
+\[
+t_{i,k}=\E[z_{i,k}\mid x,\Phi^{(c)}]=\frac{\pi_k^{(c)}f(x_i,\theta_k^{(c)})}{\sum_{l=1}^q\pi_l^{(c)}f(x_i\theta_l^{(c)})}
+\]
+with \(z\) the hidden vector which represents \(1_{i=1}\).
+```{r}
+f<-function(X,teta,k,i){
+  tmp<-0
+  for (l in 1:k){
+        tmp=tmp + (teta[l]*dpois(X[i],teta[k+l]))
+  }
+  return(tmp)
   
-  return(result)
 }
-```
-\section{Maximisation}
-Having all the possible values for the expectancy, we now want the element that maximizes the expectancy:
-```{r emm}
-em_m = function(expectancy){
-  i <- 1
-  for (j in 2:length(expectancy)){
-    if (expectancy[i] < expectancy[j]) {
-      i <- j
+
+step_E <- function(X, teta, k){
+  T<-matrix(nrow = length(X), ncol = k)
+  
+  for (i in 1:length(X)){
+    tmp = 0
+    for (l in 1:k){
+      tmp = tmp + teta[l] * dpois(X[i], teta[k + l])
+    }
+    for (j in 1:k){
+      T[i, j] = (teta[j] * dpois(X[i], teta[k + j]))/tmp
     }
   }
-  return(i)
+  return(T)
 }
 ```
-\section{Global algorithm and application}
-Using all the previous functions, we are going to write the EM-algorithm:
-```{r em}
-em <- function(data, d, k = NULL){
-  i <- 0
-  theta <- runif(n = 1, min = 0, max = 50)
-  theta2 <- -1
-  while (theta != theta2 || (!(is.null(k)) && i < k)){
-    theta2 <- theta
-    i <- i + 1
-    expec <- em_e(data, theta, d)
-    theta <- em_m(expec)
+
+
+\section{Step M}
+We finally have:
+\[\theta^{(k+1)}=\frac{\sum_{i=1}^nt_{i,k}x_i}{\sum_{i=1}^nt_{i,k}}\]
+And:
+\[\pi_k=\frac{\sum_{i=1}^{n}t_{i,k}}{n}\]
+```{r}
+
+step_M<-function(X,t,K){
+  teta_opt<-c()
+   for (k in 1:K){
+    tmp1 = 0
+    tmp2 = 0
+    for (i in 1:length(X)){
+      tmp1 =tmp1+t[i, k]*X[i]
+    }
+    
+    for (i in 1:length(X)){
+      tmp2 = tmp2 + t[i, k]
+     }
+  
+    
+    teta_opt[k] = (1/length(X)) * tmp2
+    teta_opt[K + k] = tmp1/tmp2
+   }
+  return(teta_opt)
+}
+```
+
+\section{Complete algorithm}
+
+```{r}
+#on va définir la norme 2 pour qu'on puisse calculer le critère de convergence
+
+norme_2<-function(a){
+  res=0
+  for (i in 1:length(a)){
+    res=res+(a[i]**2)
   }
-  return(theta)
+  return(res**0.5)
 }
+
+#l'algo
+
+Em_algo <- function(X, K){
+  teta = initialiser(K)
+  t = step_E(X,teta,K)
+  teta_opt = step_M(X,t,K)
+  while((((norme_2(teta-teta_opt))**2)/(norme_2(teta)**2))>10**(-6)){ #critère de convergence
+    teta=teta_opt
+    t = step_E(X,teta_opt,K)
+    teta_opt = step_M(X,t,K)
+    
+  }
+  return(teta_opt)
+}
+
+
+Em_algo(mixed_sample, 2)
+
+
+
+
 ```
-We can now use our algorithm on the previous data set:
-```{r ex}
-mvrais <- em(mixed_sample)
-print(paste("Likelyhood maximum: "), mvrais)
-plot(mixed_sample, color = 'red')
-model <- rpois(n = 300, lambda = mvrais)
-points(model, color = ' blue')
-```
+
+
+
+
+
+
+
+
+
+
+
+
+
